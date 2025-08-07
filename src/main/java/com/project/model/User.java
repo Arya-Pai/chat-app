@@ -4,29 +4,46 @@ import java.time.LocalDateTime;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-@Document(collection="users")
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+@Document(collection = "users")
 public class User {
 	@Id
 	private String id;
+	@NotBlank(message = "Username is required")
 	private String username;
+
+	@NotBlank(message = "Email is required")
+	@Email(message = "Invalid email format")
 	private String email;
+
+	@NotBlank(message = "Role is required")
 	private String role;
+
+	@NotBlank(message = "Password is required")
+	@Size(min = 6, message = "Password must be at least 6 characters")
 	private String password;
+
 	private LocalDateTime createdAt = LocalDateTime.now();
-	
-	public User() {}
-	
-	public User(String email ,String password) {
-		this.email=email;
-		this.password=password;
-		
+
+	public User() {
 	}
-	public User(String email ,String password,String username,String role) {
-		this.email=email;
-		this.password=password;
-		this.username=username;
-		this.role=role;
-		
+
+	public User(String email, String password) {
+		this.email = email;
+		this.password = password;
+
+	}
+
+	public User(String email, String password, String username, String role) {
+		this.email = email;
+		this.password = password;
+		this.username = username;
+		this.role = role;
+
 	}
 
 	public String getId() {
@@ -76,6 +93,5 @@ public class User {
 	public void setCreatedAt(LocalDateTime createdAt) {
 		this.createdAt = createdAt;
 	}
-	
-	
+
 }

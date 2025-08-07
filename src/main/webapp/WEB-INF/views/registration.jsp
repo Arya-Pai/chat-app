@@ -1,0 +1,76 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+</head>
+<body>
+<form action="/api/registerController" method="post">
+<label>Username:</label>
+        <input type="text" name="username" required><br><br>
+
+        <label>Email:</label>
+        <input type="email" name="email" required><br><br>
+
+        <label>Password:</label>
+        <input type="password" name="password" required><br><br>
+
+        <label>Confirm Password:</label>
+        <input type="password" name="confirmPassword" required><br><br>
+
+        <button type="submit">Register</button>
+	
+</form>
+<script>
+  const form = document.getElementById("registerForm");
+  const errorMsg = document.getElementById("errorMsg");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const username = document.getElementById("username").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const confirmPassword = document.getElementById("confirmPassword").value;
+
+    // Frontend password match validation
+    if (password !== confirmPassword) {
+      errorMsg.textContent = "Passwords do not match.";
+      return;
+    }
+
+    errorMsg.textContent = "";
+
+    const payload = {
+      username,
+      email,
+      password
+    };
+
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        alert("Registered successfully!");
+        window.location.href = "/login";
+        form.reset();
+      } else {
+        const data = await res.json();
+        errorMsg.textContent = data.message || "Registration failed.";
+      }
+    } catch (err) {
+      console.error(err);
+      errorMsg.textContent = "Server error. Try again later.";
+    }
+  });
+</script>
+</body>
+</html>
