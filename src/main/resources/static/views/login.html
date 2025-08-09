@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat App Login (JWT)</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; }
+        #login-form, #profile-section { max-width: 400px; margin: auto; }
+        #profile-section { display: none; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <div id="login-form">
+        <h2>Login</h2>
+        <form id="form">
+            <label>Email:<br>
+                <input type="email" name="email" id="email" required>
+            </label><br><br>
+            <label>Password:<br>
+                <input type="password" name="password" id="password" required>
+            </label><br><br>
+            <button type="submit">Login</button>
+        </form>
+        <div class="error" id="login-error"></div>
+    </div>
+    <div id="profile-section">
+        <h2>Welcome, <span id="username"></span></h2>
+        <p>Your role: <span id="role"></span></p>
+        <button id="logout">Logout</button>
+    </div>
+    <script>
+        const loginForm = document.getElementById('form');
+        const loginError = document.getElementById('login-error');
+        const profileSection = document.getElementById('profile-section');
+        const loginFormDiv = document.getElementById('login-form');
+        const usernameSpan = document.getElementById('username');
+        const roleSpan = document.getElementById('role');
+        const logoutBtn = document.getElementById('logout');
+
+        // Show profile section if JWT is present
+        if(localStorage.getItem('jwt')) {
+            showProfile();
+        }
+
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            loginError.textContent = '';
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            fetch('/api/loginController', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            })
+            .then(res => {
+                if (!res.ok) throw new Error("Invalid email or password");
+                return res.json();
+            })
+            .then(data => {
+                // Save JWT to localStorage
+                localStorage.setItem('jwt', data.token);
+                localStorage.setItem('username', data.username);
+                localStorage.setItem('role', data.role);
+                showProfile();
+            })
+            .catch(err => {
+                loginError.textContent = err.message || "Login failed";
+            });
+        });
+
+        function showProfile() {
+            loginFormDiv.style.display = 'none';
+            profileSection.style.display = 'block';
+            usernameSpan.textContent = localStorage.getItem('username') || '';
+            roleSpan.textContent = localStorage.getItem('role') || '';
+
+            // Example: fetch protected profile endpoint (if you have one)
+            // fetch('/api/profile', {
+            //     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('jwt') }
+            // }).then(...)
+        }
+
+        logoutBtn.onclick = () => {
+            localStorage.removeItem('jwt');
+            localStorage.removeItem('username');
+            localStorage.removeItem('role');
+            loginFormDiv.style.display = 'block';
+            profileSection.style.display = 'none';
+        };
+    </script>
+</body>
+</html>

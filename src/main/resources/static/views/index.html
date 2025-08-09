@@ -1,0 +1,23 @@
+
+<!DOCTYPE html>
+
+<html>
+<head>
+<script>
+    window.onload = function() {
+        // If no JWT, redirect to login
+        var jwt = localStorage.getItem("jwt");
+        if (!jwt) {
+            window.location.href = "/login";
+        }
+        // else, stay on index page
+    }
+    </script>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+
+</head>
+<body>
+
+</body>
+</html>

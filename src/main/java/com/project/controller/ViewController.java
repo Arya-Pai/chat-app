@@ -6,11 +6,16 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class ViewController {
 	@GetMapping("/login")
     public String loginPage() {
-        return "login"; 
+        return "redirect:/views/login.html"; 
     }
 
     @GetMapping("/index")
+    public String index() {
+        return "redirect:/views/index.html"; 
+    }
+    
+    @GetMapping("/")
     public String indexPage() {
-        return "index"; 
+        return "redirect:/views/index.html";
     }
 }

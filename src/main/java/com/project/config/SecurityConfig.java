@@ -27,20 +27,19 @@ public class SecurityConfig   {
 
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    	 http
-         .csrf(csrf -> csrf.disable())
-         .authorizeHttpRequests(auth -> auth
-             .requestMatchers("/login.jsp", "/api/loginController", "/api/registerController", "/registration.jsp").permitAll() // Allow unauthenticated access
-             .anyRequest().authenticated()
-         )
-         .sessionManagement(session -> session
-             .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-         )
-         .exceptionHandling(ex -> ex
-             .authenticationEntryPoint((request, response, authException) ->
-                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
-         );
-
+    	http
+    	.csrf(csrf -> csrf.disable())
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers(
+                "/login.html", "/login", 
+                "/api/loginController", "/api/registerController",
+                "/views/**", "/scripts/**", "/styles/**", "/index.html","/"
+            ).permitAll()
+            .anyRequest().authenticated()
+        )
+        .sessionManagement(session -> session
+            .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+        );
 
      return http.build();
  }
