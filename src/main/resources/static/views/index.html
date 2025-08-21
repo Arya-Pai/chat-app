@@ -1,23 +1,140 @@
-
 <!DOCTYPE html>
-
-<html>
+<html lang="en">
 <head>
-<script>
+    <meta charset="UTF-8">
+    <title>Chat App</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="/css/chatRoom.css">
+    <script>
     window.onload = function() {
-        // If no JWT, redirect to login
+        // Redirect to login if JWT missing
         var jwt = localStorage.getItem("jwt");
         if (!jwt) {
             window.location.href = "/login";
         }
-        // else, stay on index page
     }
     </script>
-<meta charset="UTF-8">
-<title>Insert title here</title>
-
 </head>
 <body>
+    <!-- SIDEBAR: Users & Groups -->
+    <aside id="chat-rooms-people-groups" aria-label="Sidebar">
+        <div id="admin-only" style="display:none;"></div>
+        <div id="other-users-and-groups" role="navigation" aria-label="Chat Room List"></div>
+    </aside>
 
+    <!-- MAIN CHAT AREA (header, messages, input) -->
+    <main id="chat-area" aria-label="Main Chat Area" style="display:none;">
+        <header id="chat-header"></header>
+        <section id="chat-messages"></section>
+        <form id="chat-input-area" autocomplete="off" onsubmit="return false;">
+            <input type="text" id="chat-message-input" placeholder="Type a message..." aria-label="Message">
+            <button type="submit" id="send-btn" aria-label="Send Message">&#9658;</button>
+        </form>
+    </main>
+
+    <!-- USER INFO & LOGOUT -->
+    <div style="position:fixed;top:18px;right:36px;z-index:100;">
+        <span>Welcome, <span id="userName"></span>!</span>
+        <span style="margin-left:12px;">(<span id="role"></span>)</span>
+        <span style="margin-left:12px;">Email: <span id="email"></span></span>
+        <button onclick="logout()" style="margin-left:18px;padding:6px 14px;">Logout</button>
+    </div>
+
+    <script>
+    // Utility: decode JWT
+    function decodeJwt(token) {
+        try {
+            return JSON.parse(atob(token.split('.')[1]));
+        } catch (e) { return {}; }
+    }
+
+    // Fill user info
+    const username = localStorage.getItem("username");
+    const role = localStorage.getItem("role");
+    const payload = decodeJwt(localStorage.getItem('jwt'));
+    const email = payload.sub || '';
+    if (username) {
+        document.getElementById("userName").textContent = username;
+        document.getElementById("role").textContent = role || '';
+        document.getElementById("email").textContent = email;
+        // If admin, show admin-only section (customize as needed)
+        if (role && role.toLowerCase() === 'admin') {
+            document.getElementById("admin-only").textContent = "Admin Panel";
+            document.getElementById("admin-only").style.display = "block";
+        }
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = "/login";
+    }
+
+    // Fetch and display users/groups
+    async function getAll() {
+        try {
+            const response = await fetch("/users", {
+                method: 'GET',
+                headers: {
+                    "Authorization": "Bearer " + localStorage.getItem("jwt"),
+                    "Content-Type": "application/json",
+                }
+            });
+            if (!response.ok) {
+                if (response.status === 401) window.location.href = "/login";
+                throw new Error("Error: " + response.status + " " + response.statusText);
+            }
+            const users = await response.json();
+            const chat_rooms = document.getElementById("other-users-and-groups");
+            chat_rooms.innerHTML = "";
+            users.forEach(user => {
+                if (user.username === username) return; // Don't show self
+                const div = document.createElement("div");
+                div.textContent = user.username;
+                div.id = user.username;
+                div.tabIndex = 0;
+                div.setAttribute("role", "button");
+                div.setAttribute("aria-label", `Start chat with ${user.username}`);
+                div.addEventListener("click", () => startChat(user));
+                div.addEventListener("keypress", e => { if (e.key === 'Enter') startChat(user); });
+                chat_rooms.appendChild(div);
+            });
+        } catch (err) {
+            console.error("Error " + err.message);
+        }
+    }
+
+    // Start chat
+    async function startChat(user) {
+        // Show chat area, set header
+        document.getElementById("chat-area").style.display = "flex";
+        document.getElementById("chat-header").textContent = `Chat with ${user.username}`;
+        // Create/join room
+        const members = Array.from(new Set([user.username, username]));
+        const bodyData = { name: user.username, members };
+        try {
+            const response = await fetch("/chatRooms/joinRoom", {
+                method: 'POST',
+                headers: {
+                    "Authorization": "Bearer " + localStorage.getItem("jwt"),
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(bodyData),
+            });
+            if (!response.ok) {
+                if (response.status === 401) window.location.href = "/login";
+                throw new Error("Error: " + response.status + " " + response.statusText);
+            }
+            const chatRoom = await response.json();
+            window.location.href = `/chatRoom/${chatRoom.id}`;
+        } catch (err) {
+            alert("Error starting chat: " + err.message);
+        }
+    }
+
+    // Initial load
+    getAll();
+
+    // (OPTIONAL) Add handlers for sending messages here (if you want to expand)
+    </script>
 </body>
 </html>

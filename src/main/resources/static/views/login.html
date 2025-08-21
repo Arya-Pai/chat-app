@@ -29,6 +29,7 @@
         <p>Your role: <span id="role"></span></p>
         <button id="logout">Logout</button>
     </div>
+    <a href="/register">Register here</a>
     <script>
         const loginForm = document.getElementById('form');
         const loginError = document.getElementById('login-error');
@@ -39,9 +40,7 @@
         const logoutBtn = document.getElementById('logout');
 
         // Show profile section if JWT is present
-        if(localStorage.getItem('jwt')) {
-            showProfile();
-        }
+       
 
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();
@@ -62,33 +61,17 @@
                 // Save JWT to localStorage
                 localStorage.setItem('jwt', data.token);
                 localStorage.setItem('username', data.username);
+                localStorage.setItem('email',data.email);
                 localStorage.setItem('role', data.role);
-                showProfile();
+                alert("Logged in successfully!");
+                window.location.href = "/";
             })
             .catch(err => {
                 loginError.textContent = err.message || "Login failed";
             });
         });
 
-        function showProfile() {
-            loginFormDiv.style.display = 'none';
-            profileSection.style.display = 'block';
-            usernameSpan.textContent = localStorage.getItem('username') || '';
-            roleSpan.textContent = localStorage.getItem('role') || '';
-
-            // Example: fetch protected profile endpoint (if you have one)
-            // fetch('/api/profile', {
-            //     headers: { 'Authorization': 'Bearer ' + localStorage.getItem('jwt') }
-            // }).then(...)
-        }
-
-        logoutBtn.onclick = () => {
-            localStorage.removeItem('jwt');
-            localStorage.removeItem('username');
-            localStorage.removeItem('role');
-            loginFormDiv.style.display = 'block';
-            profileSection.style.display = 'none';
-        };
+       
     </script>
 </body>
 </html>

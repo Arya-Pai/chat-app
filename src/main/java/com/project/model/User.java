@@ -3,6 +3,7 @@ package com.project.model;
 import java.time.LocalDateTime;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import jakarta.validation.constraints.Email;
@@ -13,9 +14,10 @@ import jakarta.validation.constraints.Size;
 public class User {
 	@Id
 	private String id;
+	
 	@NotBlank(message = "Username is required")
 	private String username;
-
+	@Indexed(unique = true)
 	@NotBlank(message = "Email is required")
 	@Email(message = "Invalid email format")
 	private String email;
