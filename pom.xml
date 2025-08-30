@@ -73,6 +73,11 @@
     <artifactId>spring-boot-starter-security</artifactId>
 </dependency>
 <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-websocket</artifactId>
+</dependency>
+
+<dependency>
     <groupId>io.jsonwebtoken</groupId>
     <artifactId>jjwt-jackson</artifactId>
     <version>0.11.5</version>
@@ -94,14 +99,6 @@
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-validation</artifactId>
 </dependency>
-
-
-
-	<dependency>
-		<groupId>com.echolink</groupId>
-		<artifactId>echolink</artifactId>
-		<version>0.0.1-SNAPSHOT</version>
-	</dependency>
 	</dependencies>
 
 	<build>

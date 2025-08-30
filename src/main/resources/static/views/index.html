@@ -22,7 +22,6 @@
         <div id="other-users-and-groups" role="navigation" aria-label="Chat Room List"></div>
     </aside>
 
-    <!-- MAIN CHAT AREA (header, messages, input) -->
     <main id="chat-area" aria-label="Main Chat Area" style="display:none;">
         <header id="chat-header"></header>
         <section id="chat-messages"></section>
@@ -41,6 +40,8 @@
     </div>
 
     <script>
+    let socket = null;
+
     // Utility: decode JWT
     function decodeJwt(token) {
         try {
@@ -121,20 +122,90 @@
                 body: JSON.stringify(bodyData),
             });
             if (!response.ok) {
-                if (response.status === 401) window.location.href = "/login";
                 throw new Error("Error: " + response.status + " " + response.statusText);
             }
             const chatRoom = await response.json();
-            window.location.href = `/chatRoom/${chatRoom.id}`;
+            loadMessages(chatRoom.id);
+            initSocket(chatRoom.id);
         } catch (err) {
             alert("Error starting chat: " + err.message);
         }
     }
 
-    // Initial load
-    getAll();
+    async function loadMessages(chatRoom_id) {
+        try {
+            const response = await fetch(`/api/messages?roomId=${chatRoom_id}`, {
+                method: 'GET',
+                headers: {
+                    "Authorization": "Bearer " + localStorage.getItem("jwt"),
+                    "Content-Type": "application/json",
+                },
+            });
+            if (!response.ok) {
+                throw new Error("Error:" + response.status + " " + response.statusText);
+            }
+            const messages = await response.json();
+            const chat_messages = document.getElementById("chat-messages");
+            chat_messages.innerHTML = ""; // Clear previous messages
+            messages.forEach(message => {
+                const div = document.createElement("div");
+                const h5 = document.createElement("h5");
+                h5.textContent = message.sender;
+                const p = document.createElement("p");
+                p.textContent = message.content;
+                div.appendChild(h5);
+                div.appendChild(p);
+                chat_messages.appendChild(div);
+            });
+        } catch (err) {
+            alert("Couldn't load chats: " + err.message);
+        }
+    }
 
-    // (OPTIONAL) Add handlers for sending messages here (if you want to expand)
+    function initSocket(chatRoom_id) {
+        if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+            console.log("Closing old socket before opening new one");
+            socket.close();
+        }
+        const token = localStorage.getItem("jwt");
+         socket = new WebSocket(`ws://localhost:8080/ws/chat/?roomId=${chatRoom_id}&token=${token}`);
+        socket.onerror = (event) => {
+        	  console.error("WebSocket error:", event);
+        	};
+
+        socket.onopen = () => {
+            console.log("Connected to WebSocket for room " + chatRoom_id);
+        };
+
+        socket.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            displayMessage(msg.sender, msg.content);
+        };
+        socket.onclose = () => {
+            console.log("WebSocket closed for room " + chatRoom_id);
+        };
+
+        document.getElementById("send-btn").onclick = () => {
+            const input = document.getElementById("chat-message-input");
+            const msg = { sender: username, content: input.value, roomId: chatRoom_id };
+            socket.send(JSON.stringify(msg));
+            input.value = "";
+        };
+    }
+
+    function displayMessage(sender, content) {
+        const chat_messages = document.getElementById("chat-messages"); // Corrected typo (getElementByID -> getElementById)
+        const div = document.createElement("div");
+        const h5 = document.createElement("h5");
+        h5.textContent = sender;
+        const p = document.createElement("p");
+        p.textContent = content;
+        div.appendChild(h5);
+        div.appendChild(p);
+        chat_messages.appendChild(div);
+    }
+
+    getAll();
     </script>
 </body>
 </html>

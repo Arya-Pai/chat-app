@@ -1,6 +1,7 @@
 package com.project.service;
 
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
@@ -16,13 +17,20 @@ public class ChatRoomService {
 	    }
 	public ChatRoom joinRoom(ChatRoom roomReq) throws Exception {
 		// TODO Auto-generated method stub
-		Optional<ChatRoom> existingRoom = chatRoomRepository.findByName(roomReq.getName());
-        if (existingRoom.isPresent()) {
-        	ChatRoom room=existingRoom.get();
-            System.out.println("Room already exists");
-            return room;
+		
+		if (roomReq.getMembers().size() == 2) {
+            String uniqueName = generatePrivateRoomName(roomReq.getMembers());
+            Optional<ChatRoom> existingRoom = chatRoomRepository.findByName(uniqueName);
+            if (existingRoom.isPresent()) {
+//            	System.out.println("Room presnt"+existingRoom.get());
+            	return existingRoom.get();
+            }
+            roomReq.setName(uniqueName);
+            return createRoom(roomReq);
         }
-        return createRoom(roomReq);
+		Optional<ChatRoom> existingRoom = chatRoomRepository.findByName(roomReq.getName());
+        return existingRoom.orElseGet(() -> createRoom(roomReq));
+        
 		
 		
 	}
@@ -40,6 +48,12 @@ public class ChatRoomService {
 		}
         
 	}
+	 private String generatePrivateRoomName(Set<String> members) {
+	        return members.stream()
+	                      .sorted()
+	                      .reduce((a, b) -> a + "_" + b)
+	                      .orElseThrow(() -> new IllegalArgumentException("Invalid members"));
+	    }
 	
 	
 	
