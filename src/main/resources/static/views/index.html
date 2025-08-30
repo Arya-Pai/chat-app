@@ -14,6 +14,8 @@
         }
     }
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
 </head>
 <body>
     <!-- SIDEBAR: Users & Groups -->
@@ -145,6 +147,7 @@
                 throw new Error("Error:" + response.status + " " + response.statusText);
             }
             const messages = await response.json();
+            
             const chat_messages = document.getElementById("chat-messages");
             chat_messages.innerHTML = ""; // Clear previous messages
             messages.forEach(message => {
@@ -161,40 +164,54 @@
             alert("Couldn't load chats: " + err.message);
         }
     }
+    
 
     function initSocket(chatRoom_id) {
-        if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
-            console.log("Closing old socket before opening new one");
-            socket.close();
+        if (window.stompClient && window.stompClient.connected) {
+            console.log("Disconnecting old STOMP client before opening new one");
+            window.stompClient.disconnect(() => {
+                console.log("Disconnected old STOMP client");
+            });
         }
+
         const token = localStorage.getItem("jwt");
-         socket = new WebSocket(`ws://localhost:8080/ws/chat/?roomId=${chatRoom_id}&token=${token}`);
-        socket.onerror = (event) => {
-        	  console.error("WebSocket error:", event);
-        	};
+       
+        const socket = new SockJS("http://localhost:8080/ws-chat");
+        const stompClient = Stomp.over(socket);
 
-        socket.onopen = () => {
-            console.log("Connected to WebSocket for room " + chatRoom_id);
-        };
+        window.stompClient = stompClient; 
 
-        socket.onmessage = (event) => {
-            const msg = JSON.parse(event.data);
-            displayMessage(msg.sender, msg.content);
-        };
-        socket.onclose = () => {
-            console.log("WebSocket closed for room " + chatRoom_id);
-        };
+        stompClient.connect(
+            { Authorization: `Bearer ${token}` }, 
+            function (frame) {
+                console.log("Connected to STOMP for room " + chatRoom_id);
 
-        document.getElementById("send-btn").onclick = () => {
-            const input = document.getElementById("chat-message-input");
-            const msg = { sender: username, content: input.value, roomId: chatRoom_id };
-            socket.send(JSON.stringify(msg));
-            input.value = "";
-        };
+                // Subscribe to room topic
+                stompClient.subscribe(`/topic/room.${chatRoom_id}`, function (message) {
+                    const msg = JSON.parse(message.body);
+                    displayMessage(msg.sender, msg.content);
+                });
+
+            
+                document.getElementById("send-btn").onclick = () => {
+                    const input = document.getElementById("chat-message-input");
+                    const msg = {
+                        sender: username,
+                        content: input.value,
+                        roomId: chatRoom_id
+                    };
+                    stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(msg));
+                    input.value = "";
+                };
+            },
+            function (error) {
+                console.error("STOMP connection error:", error);
+            }
+        );
     }
 
     function displayMessage(sender, content) {
-        const chat_messages = document.getElementById("chat-messages"); // Corrected typo (getElementByID -> getElementById)
+        const chat_messages = document.getElementById("chat-messages"); 
         const div = document.createElement("div");
         const h5 = document.createElement("h5");
         h5.textContent = sender;

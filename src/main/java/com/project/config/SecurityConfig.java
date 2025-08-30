@@ -27,7 +27,7 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/", "/views/index.html", "/views/login.html", "/login", 
                     "/api/loginController", "/api/registerController",
-                    "/scripts/**", "/css/**", "/register", "/views/registration.html","/ws/chat/**"
+                    "/scripts/**", "/css/**", "/register", "/views/registration.html","/ws-chat/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )

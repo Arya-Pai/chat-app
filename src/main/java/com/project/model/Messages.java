@@ -7,7 +7,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import jakarta.validation.constraints.NotBlank;
 
-@Document("collections:messages")
+@Document(collection="messages")
 public class Messages {
 	@Id
 	String id;
@@ -23,7 +23,7 @@ public class Messages {
 	
 	private LocalDateTime sentAt = LocalDateTime.now();
 	
-	
+	 public Messages() {} 
 	public Messages(String roomId,String sender,String content) {
 		this.roomId=roomId;
 		this.sender=sender;

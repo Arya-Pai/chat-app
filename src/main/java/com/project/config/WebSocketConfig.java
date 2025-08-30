@@ -1,27 +1,30 @@
 package com.project.config;
 
-import com.project.repo.MessageRepo;
-import com.project.service.ChatWebSocketHandler;
-
-
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
-import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
+import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
+import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
+
+import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
 @Configuration
-public class WebSocketConfig implements WebSocketConfigurer{
-	 private final MessageRepo messageRepo;
+@EnableWebSocketMessageBroker
+public class WebSocketConfig implements WebSocketMessageBrokerConfigurer{
 
-	    public WebSocketConfig(MessageRepo messageRepo) {
-	    	System.out.println("WebSocketConfig initialized, handler mapped to /ws/chat");
-	        this.messageRepo = messageRepo;
-	    }
-	   
 	@Override
-	public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-		// TODO Auto-generated method stub
-		registry.addHandler(new ChatWebSocketHandler(messageRepo), "/ws/chat/").setAllowedOrigins("http://localhost:8080");
-		
+	public void registerStompEndpoints(StompEndpointRegistry registry) {
+		registry.addEndpoint("/ws-chat")
+				.setAllowedOriginPatterns("*").withSockJS();
 	}
+	
+	@Override
+	public void configureMessageBroker(MessageBrokerRegistry config) {
+		config.enableSimpleBroker("/topic");
+		 config.setApplicationDestinationPrefixes("/app"); 
+	}
+	
+	
+
+	  
 	
 }
