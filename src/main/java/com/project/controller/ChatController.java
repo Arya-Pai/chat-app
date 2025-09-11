@@ -23,7 +23,7 @@ public class ChatController {
     @MessageMapping("/chat.sendMessage")
     public void sendMessage(Messages message) {
         messageRepo.save(message);
-        // Broadcast to the correct room topic
+      
         messagingTemplate.convertAndSend("/topic/room." + message.getRoomId(), message);
     }
 }

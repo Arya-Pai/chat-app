@@ -1,6 +1,7 @@
 package com.project.model;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Set;
 
 import org.springframework.data.annotation.Id;
@@ -21,16 +22,16 @@ public class ChatRoom {
 	private boolean isGroup;
 	@NotEmpty(message = "Members list cannot be empty")
 	@Size(min = 2)
-	private Set<String> members;
+	private HashMap<String,String> members;
 	
 	private LocalDateTime createdAt = LocalDateTime.now();
 	public ChatRoom() {}
-	public ChatRoom(String name,boolean isGroup,Set<String> members) {
+	public ChatRoom(String name,boolean isGroup,HashMap<String,String> members) {
 		this.name=name;
 		this.isGroup=isGroup;
 		this.members=members;
 	}
-	public ChatRoom(String name,Set<String> members) {
+	public ChatRoom(String name,HashMap<String,String> members) {
 		this.name=name;
 		this.members=members;
 	}
@@ -61,12 +62,26 @@ public class ChatRoom {
 	public void setGroup(boolean isGroup) {
 		this.isGroup = isGroup;
 	}
-	public Set<String> getMembers() {
+	public HashMap<String,String> getMembers() {
 		return members;
 	}
-	public void setMembers(Set<String> members) {
+	public void setMembers(HashMap<String,String> members) {
 		this.members = members;
 	}
+	
+	public String getMemberName(String email1) {
+		String email12 = email1;
+		return members.get(email12);
+	}
+	
+	public static  String encodeEmail(String email) {
+	    return email.replace(".", "_");
+	}
+
+	public static String decodeEmail(String encoded) {
+	    return encoded.replace("_", ".");
+	}
+
 	
 	
 	

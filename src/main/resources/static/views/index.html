@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/css/chatRoom.css">
     <script>
     window.onload = function() {
-        // Redirect to login if JWT missing
+    	
         var jwt = localStorage.getItem("jwt");
         if (!jwt) {
             window.location.href = "/login";
@@ -18,7 +18,7 @@
 <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
 </head>
 <body>
-    <!-- SIDEBAR: Users & Groups -->
+  
     <aside id="chat-rooms-people-groups" aria-label="Sidebar">
         <div id="admin-only" style="display:none;"></div>
         <div id="other-users-and-groups" role="navigation" aria-label="Chat Room List"></div>
@@ -33,196 +33,26 @@
         </form>
     </main>
 
-    <!-- USER INFO & LOGOUT -->
+  
     <div style="position:fixed;top:18px;right:36px;z-index:100;">
+    	<button onclick="openPopUp()"> Create GroupChat</button>
         <span>Welcome, <span id="userName"></span>!</span>
         <span style="margin-left:12px;">(<span id="role"></span>)</span>
         <span style="margin-left:12px;">Email: <span id="email"></span></span>
         <button onclick="logout()" style="margin-left:18px;padding:6px 14px;">Logout</button>
     </div>
-
-    <script>
-    let socket = null;
-
-    // Utility: decode JWT
-    function decodeJwt(token) {
-        try {
-            return JSON.parse(atob(token.split('.')[1]));
-        } catch (e) { return {}; }
-    }
-
-    // Fill user info
-    const username = localStorage.getItem("username");
-    const role = localStorage.getItem("role");
-    const payload = decodeJwt(localStorage.getItem('jwt'));
-    const email = payload.sub || '';
-    if (username) {
-        document.getElementById("userName").textContent = username;
-        document.getElementById("role").textContent = role || '';
-        document.getElementById("email").textContent = email;
-        // If admin, show admin-only section (customize as needed)
-        if (role && role.toLowerCase() === 'admin') {
-            document.getElementById("admin-only").textContent = "Admin Panel";
-            document.getElementById("admin-only").style.display = "block";
-        }
-    }
-
-    function logout() {
-        localStorage.clear();
-        window.location.href = "/login";
-    }
-
-    // Fetch and display users/groups
-    async function getAll() {
-        try {
-            const response = await fetch("/users", {
-                method: 'GET',
-                headers: {
-                    "Authorization": "Bearer " + localStorage.getItem("jwt"),
-                    "Content-Type": "application/json",
-                }
-            });
-            if (!response.ok) {
-                if (response.status === 401) window.location.href = "/login";
-                throw new Error("Error: " + response.status + " " + response.statusText);
-            }
-            const users = await response.json();
-            const chat_rooms = document.getElementById("other-users-and-groups");
-            chat_rooms.innerHTML = "";
-            users.forEach(user => {
-                if (user.username === username) return; // Don't show self
-                const div = document.createElement("div");
-                div.textContent = user.username;
-                div.id = user.username;
-                div.tabIndex = 0;
-                div.setAttribute("role", "button");
-                div.setAttribute("aria-label", `Start chat with ${user.username}`);
-                div.addEventListener("click", () => startChat(user));
-                div.addEventListener("keypress", e => { if (e.key === 'Enter') startChat(user); });
-                chat_rooms.appendChild(div);
-            });
-        } catch (err) {
-            console.error("Error " + err.message);
-        }
-    }
-
-    // Start chat
-    async function startChat(user) {
-        // Show chat area, set header
-        document.getElementById("chat-area").style.display = "flex";
-        document.getElementById("chat-header").textContent = `Chat with ${user.username}`;
-        // Create/join room
-        const members = Array.from(new Set([user.username, username]));
-        const bodyData = { name: user.username, members };
-        try {
-            const response = await fetch("/chatRooms/joinRoom", {
-                method: 'POST',
-                headers: {
-                    "Authorization": "Bearer " + localStorage.getItem("jwt"),
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(bodyData),
-            });
-            if (!response.ok) {
-                throw new Error("Error: " + response.status + " " + response.statusText);
-            }
-            const chatRoom = await response.json();
-            loadMessages(chatRoom.id);
-            initSocket(chatRoom.id);
-        } catch (err) {
-            alert("Error starting chat: " + err.message);
-        }
-    }
-
-    async function loadMessages(chatRoom_id) {
-        try {
-            const response = await fetch(`/api/messages?roomId=${chatRoom_id}`, {
-                method: 'GET',
-                headers: {
-                    "Authorization": "Bearer " + localStorage.getItem("jwt"),
-                    "Content-Type": "application/json",
-                },
-            });
-            if (!response.ok) {
-                throw new Error("Error:" + response.status + " " + response.statusText);
-            }
-            const messages = await response.json();
-            
-            const chat_messages = document.getElementById("chat-messages");
-            chat_messages.innerHTML = ""; // Clear previous messages
-            messages.forEach(message => {
-                const div = document.createElement("div");
-                const h5 = document.createElement("h5");
-                h5.textContent = message.sender;
-                const p = document.createElement("p");
-                p.textContent = message.content;
-                div.appendChild(h5);
-                div.appendChild(p);
-                chat_messages.appendChild(div);
-            });
-        } catch (err) {
-            alert("Couldn't load chats: " + err.message);
-        }
-    }
+	<div id="popup" class="popup-overlay">
+      <div class="popup-box">
+        <h2>Create Group Chat</h2>
+        <input type="text" id="groupName" placeholder="Group Name" required />
+        <input type="text" id="memberEmails" placeholder="Members (comma separated emails)" required />
+        <br />
+        <button class="submit-btn" onclick="createGroup()">Create</button>
+        <button class="close-btn" onclick="closePopup()">Cancel</button>
+      </div>
+    </div>
+    <script src="/scripts/index.js">
     
-
-    function initSocket(chatRoom_id) {
-        if (window.stompClient && window.stompClient.connected) {
-            console.log("Disconnecting old STOMP client before opening new one");
-            window.stompClient.disconnect(() => {
-                console.log("Disconnected old STOMP client");
-            });
-        }
-
-        const token = localStorage.getItem("jwt");
-       
-        const socket = new SockJS("http://localhost:8080/ws-chat");
-        const stompClient = Stomp.over(socket);
-
-        window.stompClient = stompClient; 
-
-        stompClient.connect(
-            { Authorization: `Bearer ${token}` }, 
-            function (frame) {
-                console.log("Connected to STOMP for room " + chatRoom_id);
-
-                // Subscribe to room topic
-                stompClient.subscribe(`/topic/room.${chatRoom_id}`, function (message) {
-                    const msg = JSON.parse(message.body);
-                    displayMessage(msg.sender, msg.content);
-                });
-
-            
-                document.getElementById("send-btn").onclick = () => {
-                    const input = document.getElementById("chat-message-input");
-                    const msg = {
-                        sender: username,
-                        content: input.value,
-                        roomId: chatRoom_id
-                    };
-                    stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(msg));
-                    input.value = "";
-                };
-            },
-            function (error) {
-                console.error("STOMP connection error:", error);
-            }
-        );
-    }
-
-    function displayMessage(sender, content) {
-        const chat_messages = document.getElementById("chat-messages"); 
-        const div = document.createElement("div");
-        const h5 = document.createElement("h5");
-        h5.textContent = sender;
-        const p = document.createElement("p");
-        p.textContent = content;
-        div.appendChild(h5);
-        div.appendChild(p);
-        chat_messages.appendChild(div);
-    }
-
-    getAll();
     </script>
 </body>
 </html>
